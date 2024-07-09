@@ -1,17 +1,17 @@
 # Use the official Node.js image as the base image
-FROM node:18-alpine
+FROM node:latest
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json files to the working directory
-COPY package*.json ./
+# Copy the rest of the application code to the working directory
+COPY . .
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code to the working directory
-COPY . .
+# Expose the port the development server runs on
+EXPOSE 5173
 
-# Start Nginx server
-CMD npm run dev -- --host 0.0.0.0
+# Run the development server
+CMD ["npm", "run", "dev", "--", "--host"]
