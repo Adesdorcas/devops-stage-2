@@ -1,4 +1,4 @@
-Use the latest official Python image as a base
+# Use the latest official Python image as a base
 FROM python:latest
 
 # Install Node.js and npm
