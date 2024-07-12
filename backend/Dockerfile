@@ -1,28 +1,22 @@
-# Use the latest official Python image as a base
-FROM python:latest
+FROM python:3.11 AS build
 
-# Install Node.js and npm
-RUN apt-get update && apt-get install -y \
-    nodejs \
-    npm
+WORKDIR /app/backend
 
-# Install Poetry using pip
-RUN pip install poetry
-
-# Set the working directory
-WORKDIR /app
-
-# Copy pyproject.toml and poetry.lock to the working directory
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies using Poetry
-RUN poetry install --no-root
+RUN pip install poetry
 
-# Copy the rest of the application cosudode into the container
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-root
+
 COPY . .
 
-# Expose the port FastAPI runs on
+RUN pip install sqlalchemy sqlmodel alembic
+
+ENV PYTHONPATH=/app/backend
+
+RUN chmod +x /app/backend/prestart.sh
+
 EXPOSE 8000
 
-# Run the prestart script and start the server
-CMD ["sh", "-c", "poetry run bash ./prestart.sh && poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "./prestart.sh && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

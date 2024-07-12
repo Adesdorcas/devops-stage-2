@@ -1,17 +1,28 @@
-# Use the official Node.js image as the base image
-FROM node:latest
+FROM node:17-alpine AS build
 
-# Set the working directory inside the container
-WORKDIR /app
+WORKDIR /frontend
 
-# Copy the rest of the application code to the working directory
-COPY . .
+COPY package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Expose the port the development server runs on
-EXPOSE 5173
+COPY . .
 
-# Run the development server
-CMD ["npm", "run", "dev", "--", "--host"]
+ARG VITE_API_URL
+
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+#----------------
+# Serving the app
+#----------------
+FROM nginx:alpine
+
+COPY --from=build /frontend/dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD [ "nginx", "-g", "daemon off;" ]

@@ -1,61 +1,75 @@
-version: '3.8'
-
+version: "3.9"
 services:
+  db:
+    image: postgres
+    container_name: db
+    env_file:
+      - ./backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./backend
-    container_name: fastapi_app
+      dockerfile: Dockerfile
+    container_name: backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
       - db
-    env_file:
-      - ./backend/.env
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=app
+      - POSTGRES_DB=app
+    networks:
+      - app-network
 
   frontend:
     build:
       context: ./frontend
-    container_name: nodejs_app
-    ports:
-      - "5173:5173"
+      dockerfile: Dockerfile
+    container_name: frontend
     env_file:
       - ./frontend/.env
-
-  db:
-    image: postgres:latest
-    container_name: postgres_db
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./backend/.env
+      - "5174:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
 
   adminer:
     image: adminer
     container_name: adminer
     ports:
       - "8080:8080"
+    networks:
+      - app-network
 
   proxy:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx_proxy_manager
+    image: "jc21/nginx-proxy-manager:latest"
+    container_name: proxy
+    restart: always
     ports:
       - "80:80"
+      - "8090:81"
       - "443:443"
-      - "81:81"
     environment:
       DB_SQLITE_FILE: "/data/database.sqlite"
     volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    depends_on:
-      - db
-      - backend
-      - frontend
-      - adminer
+      - ./nginx-data:/data
+      - ./nginx-letsencrypt:/etc/letsencrypt
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
-  data:
-  letsencrypt:
+
+networks:
+  app-network:
+    driver: bridge
